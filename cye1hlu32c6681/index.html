@@ -124,7 +124,7 @@
   .fieldrow{ display:flex; gap:14px; margin-bottom:10px; flex-wrap:wrap; }
   .field{ flex:1; min-width:180px; }
   .field label{ display:block; font-family:'Segoe UI',system-ui,sans-serif; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--pine-deep); font-weight:700; margin-bottom:4px; }
-  .field input, .field textarea{ width:100%; height:38px; box-sizing:border-box; border:1.2px solid var(--line); border-radius:5px; padding:8px 10px; font-family:inherit; font-size:13px; background:#fff; color:var(--ink); }
+  .field input, .field textarea{ width:100%; box-sizing:border-box; border:1.2px solid var(--line); border-radius:5px; padding:11px 10px; font-family:inherit; font-size:13px; background:#fff; color:var(--ink); }
   .field textarea{ height:auto; }
   .field input:focus{ outline:none; border-color:var(--pine); }
 
@@ -1052,6 +1052,45 @@ function exportRemindersToCalendar(){
   alert('Downloaded puppy-reminders.ics with '+items.length+' due date'+(items.length===1?'':'s')+' — every one currently on file, not just what\'s due soon.\n\nSee "How to Import Your Due Dates into a Calendar App" on this tab for exact steps.\n\nStill re-export whenever you add a NEW due date — this only captures what\'s here right now.');
 }
 
+function renderReadMeFirst(){
+  const p = document.getElementById("panel-readme"); p.innerHTML = "";
+  p.append(...header("Start here","Read Me First","A few things worth knowing before you dive in."));
+  p.append(el("div",{class:"must-read"},
+    el("div",{class:"must-read-title"},"⚠ How your data is saved"),
+    el("div",{},"Everything you enter is saved only in ",el("b",{},"this browser")," — nowhere else. Don't use ",el("b",{},"Incognito or Private browsing"),"; it won't save anything at all."),
+    el("ul",{class:"tick", style:"margin-top:8px;"},
+      el("li",{},el("b",{},"Before clearing your browser's data: "),el("b",{},"Export first"), " since clearing wipes everything in the browser. Use ",el("b",{},"Import")," with that exported file afterward to bring your data back."),
+      el("li",{},el("b",{},"More than one person using this? "),"Everyone needs the ",el("b",{},"same browser")," on the ",el("b",{},"same device")," — and on a shared computer, the ",el("b",{},"same login")," too — or you won't see each other's changes. If that's not possible: ",el("b",{},"Export before closing")," (if you made changes), and ",el("b",{},"Import that same file before editing")," — every time."),
+      el("li",{},el("b",{},"Syncing isn't the same as backing up. "),"Putting an exported file in a shared folder (Dropbox, Google Drive, iCloud) only moves it between devices — it doesn't protect it. ",el("b",{},"Export")," is your actual backup — there's a weekly reminder for it below (on by default), but making it your own habit is still the safest bet.")
+    )
+  ));
+  p.append(el("div",{class:"box", style: state.autoBackupEnabled ? "border-color:var(--pine);" : "border-color:var(--danger);"},
+    el("div",{class:"box-h"},"Weekly backup reminder"),
+    el("div",{class:"box-b"},
+      el("div",{style:"margin-bottom:8px;"}, "Currently: ", el("b",{style:state.autoBackupEnabled?"":"color:var(--danger);"}, state.autoBackupEnabled ? "ON" : "OFF"),
+        state.autoBackupEnabled
+          ? " — if it's been over a week since your last backup, a reminder will appear at the top with a one-click Back Up Now button. If you already Export yourself, that counts too — the reminder skips that week automatically."
+          : " — you won't be reminded to back up. That's your call, but it means a lost or wiped browser means lost data with no recent backup to fall back on."
+      ),
+      el("button",{class:"addrow", onclick: state.autoBackupEnabled ? turnOffBackupReminder : ()=>{ state.autoBackupEnabled=true; scheduleAutosave(); renderBackupBanner(); renderReadMeFirst(); }},
+        state.autoBackupEnabled ? "Turn Off" : "Turn Back On")
+    )
+  ));
+  p.append(el("div",{class:"stitch"}));
+  p.append(el("div",{class:"box-h"},"Frequently asked"));
+  const faqs = [
+    ["How do vet reminders know what's due?", "Only from what you type in — there's no built-in vaccine schedule or vet database. If you haven't entered a \"Next due\" date on the Vet & Emergency tab, nothing will remind you about it. Garbage in, garbage out — the reminders are only as good as what's logged."],
+    ["Why does everything need a home date?", "Every calculated date in the system — which day of which phase you're on, when a log entry is dated, age on the Med Card — works backward from that one field. Set it once on the Pet Profile tab and everything else follows automatically."],
+    ["Can I use this for more than one pet?", "Depends on your license tier — check the License tab for your exact pet limit. Each pet gets a fully separate profile, logs, and charts; nothing overlaps between them."],
+    ["What happens if I switch phones or computers?", "Your data doesn't travel with you automatically — see the data-saving section above. Export on the old device, Import on the new one."],
+    ["The potty/vet schedule doesn't match what my vet told me — which do I follow?", "Your vet, always. Everything here is general reference, not medical advice specific to your puppy — when the two disagree, your vet's guidance wins."],
+    ["Is my data private?", "Yes — everything stays in your own browser's local storage. Nothing is uploaded or sent anywhere, and there's no account or server involved at all."],
+  ];
+  faqs.forEach(([q,a])=>{
+    p.append(el("div",{class:"box", style:"margin-bottom:10px;"}, el("div",{class:"box-h"},q), el("div",{class:"box-b"},a)));
+  });
+}
+
 /* ============================================================ PET SWITCHER ============================================================ */
 function renderPetBar(){
   const bar = document.getElementById("petBar");
@@ -1083,6 +1122,7 @@ function renderPetBar(){
 
 /* ============================================================ TABS ============================================================ */
 const TABS = [
+  {id:"readme", label:"Read Me First"},
   {id:"profile", label:"Pet Profile"},
   {id:"welcome", label:"Welcome"},
   ...PHASES.map(p=>({id:p.id, label:p.label})),
@@ -1219,26 +1259,8 @@ function renderProfile(){
 function renderWelcome(){
   const p = document.getElementById("panel-welcome");
   p.innerHTML = "";
-  p.append(el("div",{class:"must-read"},
-    el("div",{class:"must-read-title"},"⚠ Please read: how your data is saved"),
-    el("div",{},"Everything you enter is saved only in ",el("b",{},"this browser")," — nowhere else. Don't use ",el("b",{},"Incognito or Private browsing"),"; it won't save anything at all."),
-    el("ul",{class:"tick", style:"margin-top:8px;"},
-      el("li",{},el("b",{},"Before clearing your browser's data: "),el("b",{},"Export first"), " since clearing wipes everything in the browser. Use ",el("b",{},"Import")," with that exported file afterward to bring your data back."),
-      el("li",{},el("b",{},"More than one person using this? "),"Everyone needs the ",el("b",{},"same browser")," on the ",el("b",{},"same device")," — and on a shared computer, the ",el("b",{},"same login")," too — or you won't see each other's changes. If that's not possible: ",el("b",{},"Export before closing")," (if you made changes), and ",el("b",{},"Import that same file before editing")," — every time."),
-      el("li",{},el("b",{},"Syncing isn't the same as backing up. "),"Putting an exported file in a shared folder (Dropbox, Google Drive, iCloud) only moves it between devices — it doesn't protect it. ",el("b",{},"Export")," is your actual backup — there's a weekly reminder for it below (on by default), but making it your own habit is still the safest bet.")
-    )
-  ));
-  p.append(el("div",{class:"box", style: state.autoBackupEnabled ? "border-color:var(--pine);" : "border-color:var(--danger);"},
-    el("div",{class:"box-h"},"Weekly backup reminder"),
-    el("div",{class:"box-b"},
-      el("div",{style:"margin-bottom:8px;"}, "Currently: ", el("b",{style:state.autoBackupEnabled?"":"color:var(--danger);"}, state.autoBackupEnabled ? "ON" : "OFF"),
-        state.autoBackupEnabled
-          ? " — if it's been over a week since your last backup, a reminder will appear at the top with a one-click Back Up Now button. If you already Export yourself, that counts too — the reminder skips that week automatically."
-          : " — you won't be reminded to back up. That's your call, but it means a lost or wiped browser means lost data with no recent backup to fall back on."
-      ),
-      el("button",{class:"addrow", onclick: state.autoBackupEnabled ? turnOffBackupReminder : ()=>{ state.autoBackupEnabled=true; scheduleAutosave(); renderBackupBanner(); renderWelcome(); }},
-        state.autoBackupEnabled ? "Turn Off" : "Turn Back On")
-    )
+  p.append(el("div",{class:"must-read", style:"padding:12px 20px;"},
+    el("div",{},"⚠ ",el("b",{},"Your data is saved only in this browser — nowhere else."), " See the ",el("b",{},"\"Read Me First\""), " tab for the full picture (backups, sharing, and FAQ) before you begin.")
   ));
   p.append(...header("Before you begin","How This System Works","Five phases, Day 1 through Year 2 — set the home date above and every log below fills in real dates automatically."));
   p.append(el("div",{class:"box pine"}, el("div",{class:"box-h"},"Welcome"),
@@ -1770,6 +1792,7 @@ function safeRender(label, fn){
 }
 function buildAll(){
   safeRender("profile", renderProfile);
+  safeRender("readme", renderReadMeFirst);
   safeRender("welcome", renderWelcome);
   PHASES.forEach(phase=>safeRender(phase.id, ()=>renderPhase(phase)));
   safeRender("night", renderNight);
