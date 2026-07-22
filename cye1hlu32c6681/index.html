@@ -65,6 +65,7 @@
   tr:nth-child(even) td{ background:rgba(63,93,79,0.035); }
   td input[type=text], td input[type=time], td input[type=date]{ width:100%; border:none; background:transparent; font-family:inherit; font-size:12.8px; color:var(--ink); padding:4px 2px; }
   td input[type=text]:focus, td input[type=time]:focus, td input[type=date]:focus{ outline:none; background:#fff6e0; border-radius:3px; }
+  td input.gridcell{ font-size:15px; font-weight:700; text-align:center; padding:8px 2px; color:var(--pine-deep); }
   .notecell{ color:var(--ink-soft); font-style:italic; font-size:11.8px; }
   .addrow{ font-family:'Segoe UI',system-ui,sans-serif; font-size:11.5px; font-weight:600; color:var(--pine-deep); background:none; border:1.2px dashed var(--pine); border-radius:14px; padding:6px 12px; cursor:pointer; margin-top:8px; }
   .addrow:hover{ background:var(--paper-alt); }
@@ -123,7 +124,8 @@
   .fieldrow{ display:flex; gap:14px; margin-bottom:10px; flex-wrap:wrap; }
   .field{ flex:1; min-width:180px; }
   .field label{ display:block; font-family:'Segoe UI',system-ui,sans-serif; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--pine-deep); font-weight:700; margin-bottom:4px; }
-  .field input, .field textarea{ width:100%; border:1.2px solid var(--line); border-radius:5px; padding:8px 10px; font-family:inherit; font-size:13px; background:#fff; color:var(--ink); }
+  .field input, .field textarea{ width:100%; height:38px; box-sizing:border-box; border:1.2px solid var(--line); border-radius:5px; padding:8px 10px; font-family:inherit; font-size:13px; background:#fff; color:var(--ink); }
+  .field textarea{ height:auto; }
   .field input:focus{ outline:none; border-color:var(--pine); }
 
   .mrow{ border-bottom:1px dotted var(--line); padding:12px 0; }
@@ -1222,7 +1224,7 @@ function renderWelcome(){
     el("div",{},"Everything you enter is saved only in ",el("b",{},"this browser")," — nowhere else. Don't use ",el("b",{},"Incognito or Private browsing"),"; it won't save anything at all."),
     el("ul",{class:"tick", style:"margin-top:8px;"},
       el("li",{},el("b",{},"Before clearing your browser's data: "),el("b",{},"Export first"), " since clearing wipes everything in the browser. Use ",el("b",{},"Import")," with that exported file afterward to bring your data back."),
-      el("li",{},el("b",{},"More than one person using this? "),"Everyone must use the ",el("b",{},"same login")," and the ",el("b",{},"same browser")," on the ",el("b",{},"same device"),", or you won't see each other's changes. If that's not possible: ",el("b",{},"Export before closing")," (if you made changes), and ",el("b",{},"Import that same file before editing")," — every time."),
+      el("li",{},el("b",{},"More than one person using this? "),"Everyone needs the ",el("b",{},"same browser")," on the ",el("b",{},"same device")," — and on a shared computer, the ",el("b",{},"same login")," too — or you won't see each other's changes. If that's not possible: ",el("b",{},"Export before closing")," (if you made changes), and ",el("b",{},"Import that same file before editing")," — every time."),
       el("li",{},el("b",{},"Syncing isn't the same as backing up. "),"Putting an exported file in a shared folder (Dropbox, Google Drive, iCloud) only moves it between devices — it doesn't protect it. ",el("b",{},"Export")," is your actual backup — there's a weekly reminder for it below (on by default), but making it your own habit is still the safest bet.")
     )
   ));
@@ -1270,7 +1272,7 @@ function renderWelcome(){
   const featTable = el("table",{},
     el("thead",{}, el("tr",{}, el("th",{style:"width:22%"},"Feature"), el("th",{},"Where"))),
     el("tbody",{},
-      el("tr",{}, el("td",{},"Add another pet"), el("td",{},"The bar just above the tabs — up to "+MAX_PETS+" pet"+(MAX_PETS===1?"":"s")+" on this license.")),
+      ...(MAX_PETS>1 ? [el("tr",{}, el("td",{},"Add another pet"), el("td",{},"The bar just above the tabs — up to "+MAX_PETS+" pets on this license."))] : []),
       el("tr",{}, el("td",{},"Print Med Card"), el("td",{},"Vet & Emergency tab — a one-page summary to bring to appointments.")),
       el("tr",{}, el("td",{},"Receipt photos & reimbursement"), el("td",{},"Vet & Emergency tab, inside each visit card — upload photos, then print selected dates.")),
       el("tr",{}, el("td",{},"Due-date reminders"), el("td",{},"Appear automatically near the top when something's due within 2 days or overdue.")),
@@ -1400,7 +1402,12 @@ function renderWeeklyLog(tabId, logKey, slots, eyebrow, title, sub, extraFn){
     const tr = el("tr",{}, el("td",{style:"font-weight:700;color:var(--pine-deep);font-family:'Segoe UI',system-ui,sans-serif;font-size:11.5px;"},slot));
     DAYS.forEach((d,i)=>{
       const val = week.data[slot][i] || "";
-      tr.appendChild(el("td",{}, el("input",{type:"text", value:val, oninput:e=>{ week.data[slot][i]=e.target.value; scheduleAutosave(); }})));
+      tr.appendChild(el("td",{}, el("input",{type:"text", class:"gridcell", value:val, oninput:e=>{
+        const upper = e.target.value.toUpperCase();
+        e.target.value = upper;
+        week.data[slot][i]=upper;
+        scheduleAutosave();
+      }})));
     });
     tbody.appendChild(tr);
   });
@@ -1606,7 +1613,7 @@ function renderVetRows(){
     ));
     card.append(el("div",{class:"fieldrow"},
       el("div",{class:"field"}, el("label",{},"Visit / Vaccine"), el("input",{type:"text", value:row.visit, oninput:e=>{P().vet[idx].visit=e.target.value; scheduleAutosave();}})),
-      el("div",{class:"field"}, el("label",{},"Reason for visit"), el("input",{type:"text", value:row.reason, placeholder:"Wellness check / Vaccination / Other", oninput:e=>{P().vet[idx].reason=e.target.value; scheduleAutosave();}})),
+      el("div",{class:"field"}, el("label",{},"Reason for visit"), el("input",{type:"text", value:row.reason, placeholder:"Wellness / Vaccine / Other", oninput:e=>{P().vet[idx].reason=e.target.value; scheduleAutosave();}})),
     ));
     card.append(el("div",{class:"fieldrow"},
       el("div",{class:"field"}, el("label",{},"Date given"), el("input",{type:"date", value:row.date, oninput:e=>{P().vet[idx].date=e.target.value; scheduleAutosave();}})),
