@@ -426,6 +426,7 @@ function ensureFirstWeek(logKey){
 /* ============================================================ PERSISTENCE ============================================================ */
 const STORAGE_KEY = 'puppyScheduleSystemData_v3_starter';
 let storageAvailable = false;
+let hasEverSavedLocally = false;
 try{ localStorage.setItem('__t','1'); localStorage.removeItem('__t'); storageAvailable = true; }catch(e){ storageAvailable = false; }
 
 function setSaveStatus(text, cls){
@@ -437,6 +438,7 @@ function saveToLocal(){
   if(!storageAvailable){ setSaveStatus('Autosave unavailable here — use Export', 'warn'); return false; }
   try{
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    hasEverSavedLocally = true;
     const t = new Date().toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
     setSaveStatus('All changes saved · '+t, 'ok');
     return true;
@@ -997,6 +999,7 @@ function renderBackupBanner(){
   const host = document.getElementById("backupBanner");
   if(!host) return;
   host.innerHTML = "";
+  if(!hasEverSavedLocally) return; // fresh session, nothing entered yet — nothing to back up
   if(!state.autoBackupEnabled) return;
   if(daysSinceLastBackup() < 7) return;
   const banner = el("div",{class:"reminder-banner"});
@@ -1071,10 +1074,6 @@ function renderPetBar(){
       state.currentPetId = pet.id;
       rerenderAll(); scheduleAutosave();
     }}, "+ Add Pet"));
-  } else if(MAX_PETS===1){
-    bar.appendChild(el("span",{class:"petbar-note"}, "This license supports 1 pet. See the Pro license for multi-pet support."));
-  } else {
-    bar.appendChild(el("span",{class:"petbar-note"}, "Limit of "+MAX_PETS+" pets reached for this license."));
   }
 }
 
@@ -1785,6 +1784,7 @@ function rerenderAll(){
 
 function init(){
   const found = loadFromLocal();
+  hasEverSavedLocally = found;
   if(!storageAvailable){
     document.getElementById("storageBanner").innerHTML =
       '<div class="banner">Autosave isn\'t available in this preview window, so entries will only last while this tab stays open. Open this file directly in your own browser (outside Claude) for automatic saving, or use Export before closing to keep a backup.</div>';
