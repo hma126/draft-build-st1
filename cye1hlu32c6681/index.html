@@ -1054,6 +1054,8 @@ function exportRemindersToCalendar(){
 function renderPetBar(){
   const bar = document.getElementById("petBar");
   bar.innerHTML = "";
+  if(MAX_PETS===1){ bar.style.display = "none"; return; }
+  bar.style.display = "";
   state.pets.forEach(pet=>{
     const kids = [];
     if(pet.profile.photo) kids.push(el("img",{class:"pet-thumb", src:pet.profile.photo}));
