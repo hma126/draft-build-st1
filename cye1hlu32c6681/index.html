@@ -1315,7 +1315,7 @@ function renderProfile(){
   );
   const row3 = el("div",{class:"fieldrow"},
     el("div",{class:"field"}, el("label",{},"Known allergies"), el("input",{type:"text", value:pet.profile.allergies, placeholder:"e.g. chicken, penicillin — leave blank if none known", oninput:e=>{ pet.profile.allergies=e.target.value; scheduleAutosave(); }})),
-    el("div",{class:"field", style:"flex:2;"}, el("label",{},"General notes"), el("input",{type:"text", value:pet.profile.notes, placeholder:"Anything else worth remembering", oninput:e=>{ pet.profile.notes=e.target.value; scheduleAutosave(); }})),
+    el("div",{class:"field", style:"flex:2;"}, el("label",{},"General notes"), el("textarea",{rows:"2", placeholder:"Anything else worth remembering", oninput:e=>{ pet.profile.notes=e.target.value; scheduleAutosave(); }}, pet.profile.notes)),
   );
   const fieldsCol = el("div",{class:"photo-fields"}, idBadge, row1, row2, row3);
   p.append(el("div",{class:"photo-row"}, photoCol, fieldsCol));
@@ -1560,7 +1560,7 @@ function renderGrowthRows(){
     tbody.appendChild(el("tr",{},
       el("td",{}, el("input",{type:"date", value:row.date, oninput:e=>{row.date=e.target.value; scheduleAutosave();}})),
       el("td",{}, el("input",{type:"text", value:row.weight, placeholder:"e.g. 7.5", oninput:e=>{row.weight=e.target.value; scheduleAutosave();}})),
-      el("td",{}, el("input",{type:"text", value:row.notes, oninput:e=>{row.notes=e.target.value; scheduleAutosave();}})),
+      el("td",{}, el("textarea",{rows:"2", oninput:e=>{row.notes=e.target.value; scheduleAutosave();}}, row.notes)),
     ));
   });
 }
@@ -1828,7 +1828,7 @@ function renderMilestones(){
     p.append(el("div",{class:"mrow"}, el("div",{class:"mlabel"}, m.label),
       el("div",{class:"fieldrow"},
         el("div",{class:"field"}, el("label",{},"Date"), mdyDateField(m.date, iso=>{P().milestones[idx].date=iso; scheduleAutosave();})),
-        el("div",{class:"field", style:"flex:3;"}, el("label",{},"Notes"), el("input",{type:"text", value:m.notes, oninput:e=>{P().milestones[idx].notes=e.target.value; scheduleAutosave();}})),
+        el("div",{class:"field", style:"flex:3;"}, el("label",{},"Notes"), el("textarea",{rows:"2", oninput:e=>{P().milestones[idx].notes=e.target.value; scheduleAutosave();}}, m.notes)),
       )));
   });
 }
@@ -1855,7 +1855,7 @@ function renderReference(){
     tbody.appendChild(el("tr",{}, el("td",{},row.skill),
       el("td",{}, el("input",{type:"date", value:row.started, oninput:e=>{P().training[idx].started=e.target.value; scheduleAutosave();}})),
       el("td",{}, el("input",{type:"date", value:row.mastered, oninput:e=>{P().training[idx].mastered=e.target.value; scheduleAutosave();}})),
-      el("td",{}, el("input",{type:"text", value:row.notes, oninput:e=>{P().training[idx].notes=e.target.value; scheduleAutosave();}})),
+      el("td",{}, el("textarea",{rows:"2", oninput:e=>{P().training[idx].notes=e.target.value; scheduleAutosave();}}, row.notes)),
     ));
   });
   table.appendChild(tbody); p.append(table);
