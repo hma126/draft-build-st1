@@ -550,11 +550,22 @@ function doExport(){
   box.append(el("div",{class:"box-b", style:"margin-bottom:12px;"},
     "Unless your browser asked you to choose a folder, this went to your device's Downloads folder (on iPhone Chrome specifically, check Chrome's own ⋮ menu → Downloads — it doesn't use the same folder as Safari). Each export is dated, so you'll build a backup history over time."));
   box.append(el("div",{class:"box-b", style:"margin-bottom:14px;color:var(--ink-soft);font-style:italic;"},
-    "Can't find the file after checking there? The download may not have completed on this browser — tap the button below to open your data directly instead, then use your browser's own Share or Save option to save it yourself."));
-  box.append(el("div",{style:"display:flex;gap:8px;flex-wrap:wrap;"},
+    "Can't find the file after checking there? Try one of these instead — both work even if downloads or new-tab links are being blocked."));
+  const textFallbackHost = el("div",{});
+  box.append(el("div",{style:"display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;"},
     el("button",{class:"btn primary", onclick:()=>document.body.removeChild(overlay)}, "OK"),
-    el("button",{class:"btn", onclick:()=>{ window.open(url, "_blank"); }}, "Open Data in New Tab Instead")
+    el("button",{class:"btn", onclick:()=>{ window.open(url, "_blank"); }}, "Open Data in New Tab"),
+    el("button",{class:"btn", onclick:()=>{
+      textFallbackHost.innerHTML = "";
+      const ta = el("textarea",{readonly:"", style:"width:100%;height:140px;box-sizing:border-box;font-family:monospace;font-size:11px;border:1.2px solid var(--line);border-radius:5px;padding:8px;margin-top:8px;"}, jsonText);
+      textFallbackHost.append(
+        el("div",{style:"font-size:11px;color:var(--ink-soft);margin-top:8px;"},"Tap inside the box, Select All, then Copy — paste it into Notes, an email to yourself, or anywhere else you can save text."),
+        ta
+      );
+      ta.focus(); ta.select();
+    }}, "Show as Text to Copy")
   ));
+  box.append(textFallbackHost);
   overlay.append(box);
   document.body.appendChild(overlay);
 }
@@ -574,6 +585,17 @@ function doImport(evt){
   };
   reader.readAsText(file);
   evt.target.value = "";
+}
+function importFromPastedText(text){
+  try{
+    const normalized = normalizeState(JSON.parse(text));
+    if(!normalized) throw new Error("bad shape");
+    state = normalized;
+    rerenderAll();
+    saveToLocal();
+    alert("Data imported successfully.");
+    return true;
+  }catch(err){ alert("Couldn't read that text — make sure you copied the entire thing, starting with { and ending with }."); return false; }
 }
 function openImportPicker(){
   document.getElementById('importFile').click();
@@ -1099,6 +1121,17 @@ function renderSettings(){
         state.autoBackupEnabled ? "Turn Off" : "Turn Back On")
     )
   ));
+  p.append(el("div",{class:"box"},
+    el("div",{class:"box-h"},"Restore from pasted text"),
+    el("div",{class:"box-b"},
+      el("div",{style:"margin-bottom:8px;"},"For the rare case where downloading or importing a file doesn't work on your browser. If you used \"Show as Text to Copy\" during an Export, paste that text below to bring it back in."),
+      (()=>{
+        const ta = el("textarea",{placeholder:"Paste the exported text here — starts with { and ends with }", style:"width:100%;height:100px;box-sizing:border-box;font-family:monospace;font-size:11px;border:1.2px solid var(--line);border-radius:5px;padding:8px;margin-bottom:8px;"});
+        const btn = el("button",{class:"addrow", onclick:()=>{ if(ta.value.trim()) importFromPastedText(ta.value.trim()); }}, "Import from Pasted Text");
+        return el("div",{}, ta, btn);
+      })()
+    )
+  ));
 }
 
 function renderReadMeFirst(){
@@ -1109,7 +1142,7 @@ function renderReadMeFirst(){
     el("div",{},"Everything you enter is saved only in ",el("b",{},"this browser")," — nowhere else. Don't use ",el("b",{},"Incognito or Private browsing"),"; it won't save anything at all."),
     el("ul",{class:"tick", style:"margin-top:8px;"},
       el("li",{},el("b",{},"Before clearing your browser's data: "),el("b",{},"Export first"), " since clearing wipes everything in the browser. Use ",el("b",{},"Import")," with that exported file afterward to bring your data back."),
-      el("li",{},el("b",{},"More than one person using this? "),"Everyone needs the ",el("b",{},"same browser")," on the ",el("b",{},"same device")," — and on a shared computer, the ",el("b",{},"same login")," too — or you won't see each other's changes. If that's not possible: ",el("b",{},"Export before closing")," (if you made changes), and ",el("b",{},"Import that same file before editing")," — every time."),
+      el("li",{},el("b",{},"More than one person using this? "),"Everyone needs the ",el("b",{},"same browser")," on the ",el("b",{},"same device")," — and on a shared computer, the ",el("b",{},"same login"),", and in Chrome specifically, the ",el("b",{},"same signed-in Google account")," too — or you won't see each other's changes. If that's not possible: ",el("b",{},"Export before closing")," (if you made changes), and ",el("b",{},"Import that same file before editing")," — every time."),
       el("li",{},el("b",{},"Syncing isn't the same as backing up. "),"Putting an exported file in a shared folder (Dropbox, Google Drive, iCloud) only moves it between devices — it doesn't protect it. ",el("b",{},"Export")," is your actual backup — there's a weekly reminder for it on the ",el("b",{},"Settings")," tab (on by default), but making it your own habit is still the safest bet.")
     )
   ));
@@ -1120,6 +1153,7 @@ function renderReadMeFirst(){
     ["Why does everything need a home date?", "Every calculated date in the system — which day of which phase you're on, when a log entry is dated, age on the Med Card — works backward from that one field. Set it once on the Pet Profile tab and everything else follows automatically."],
     ["Can I use this for more than one pet?", "Depends on your license tier — check the License tab for your exact pet limit. Each pet gets a fully separate profile, logs, and charts; nothing overlaps between them."],
     ["What happens if I switch phones or computers?", "Your data doesn't travel with you automatically — see the data-saving section above. Export on the old device, Import on the new one."],
+    ["I opened the same link and my data is just gone — what happened?", "Before assuming it's lost, check what actually changed. The most common cause: if you use Chrome, it can keep separate, sealed-off data for each Google account you're signed into — almost like separate browsers. Signing into a different Google account can make this page look completely empty, even though your real data is untouched and waiting under the account you used before. Sign back into that same Google account and it should reappear. If it truly doesn't come back, see the \"same browser, same device\" rule above — that's the next most likely cause."],
     ["The potty/vet schedule doesn't match what my vet told me — which do I follow?", "Your vet, always. Everything here is general reference, not medical advice specific to your puppy — when the two disagree, your vet's guidance wins."],
     ["Is my data private?", "Yes — everything stays in your own browser's local storage. Nothing is uploaded or sent anywhere, and there's no account or server involved at all."],
   ];
