@@ -356,6 +356,14 @@ const PHASES = [
 const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 const POTTY_SLOTS = ["Wake","Mid-Morning","After Lunch","Afternoon","Dinner","Evening","Bedtime"];
 const FEED_SLOTS = ["Breakfast","Lunch","Dinner","Water Refills","Naps Today","Night Sleep"];
+const SLOT_DISPLAY_LABELS = {
+  "Breakfast": "Breakfast (cups)",
+  "Lunch": "Lunch (cups)",
+  "Dinner": "Dinner (cups)",
+  "Water Refills": "Water Refills (times)",
+  "Naps Today": "Naps Today (count)",
+  "Night Sleep": "Night Sleep (hours)",
+};
 
 /* ============================================================ TIER CAP (swapped per build) ============================================================ */
 const MAX_PETS = 1;
@@ -1504,7 +1512,8 @@ function renderWeeklyLog(tabId, logKey, slots, eyebrow, title, sub, extraFn){
   const tbody = el("tbody",{});
   const isShortCode = tabId === "potty";
   slots.forEach(slot=>{
-    const tr = el("tr",{}, el("td",{style:"font-weight:700;color:var(--pine-deep);font-family:'Segoe UI',system-ui,sans-serif;font-size:11.5px;"},slot));
+    const displayLabel = (tabId==="feed" && SLOT_DISPLAY_LABELS[slot]) ? SLOT_DISPLAY_LABELS[slot] : slot;
+    const tr = el("tr",{}, el("td",{style:"font-weight:700;color:var(--pine-deep);font-family:'Segoe UI',system-ui,sans-serif;font-size:11.5px;"},displayLabel));
     DAYS.forEach((d,i)=>{
       const val = week.data[slot][i] || "";
       const cellInput = isShortCode
