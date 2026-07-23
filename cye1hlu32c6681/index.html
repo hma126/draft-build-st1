@@ -1502,16 +1502,23 @@ function renderWeeklyLog(tabId, logKey, slots, eyebrow, title, sub, extraFn){
   DAYS.forEach((d,i)=> headRow.appendChild(el("th",{}, d+" "+fmtShort(addDays(wStart,i)))));
   table.appendChild(el("thead",{}, headRow));
   const tbody = el("tbody",{});
+  const isShortCode = tabId === "potty";
   slots.forEach(slot=>{
     const tr = el("tr",{}, el("td",{style:"font-weight:700;color:var(--pine-deep);font-family:'Segoe UI',system-ui,sans-serif;font-size:11.5px;"},slot));
     DAYS.forEach((d,i)=>{
       const val = week.data[slot][i] || "";
-      tr.appendChild(el("td",{}, el("input",{type:"text", class:"gridcell", value:val, oninput:e=>{
-        const upper = e.target.value.toUpperCase();
-        e.target.value = upper;
-        week.data[slot][i]=upper;
-        scheduleAutosave();
-      }})));
+      const input = isShortCode
+        ? el("input",{type:"text", class:"gridcell", value:val, oninput:e=>{
+            const upper = e.target.value.toUpperCase();
+            e.target.value = upper;
+            week.data[slot][i]=upper;
+            scheduleAutosave();
+          }})
+        : el("input",{type:"text", value:val, oninput:e=>{
+            week.data[slot][i]=e.target.value;
+            scheduleAutosave();
+          }});
+      tr.appendChild(el("td",{}, input));
     });
     tbody.appendChild(tr);
   });
