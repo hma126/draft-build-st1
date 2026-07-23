@@ -533,17 +533,30 @@ let lastExportFilename = null;
 function doExport(){
   if(!confirm("Export a backup file now?")) return;
   const filename = "puppy-schedule-data-"+todayISO()+".json";
-  const blob = new Blob([JSON.stringify(state,null,2)], {type:"application/json"});
+  const jsonText = JSON.stringify(state,null,2);
+  const blob = new Blob([jsonText], {type:"application/json"});
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url; a.download = filename;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
   lastExportFilename = filename;
   state.lastBackupDate = todayISO();
   scheduleAutosave();
   renderBackupBanner();
-  alert("Saved as \""+filename+"\"\n\nUnless your browser asked you to choose a folder, this went to your device's Downloads folder. Each export is dated, so you'll build up a history of backups over time — handy if you ever need an earlier version back.\n\nSharing this with family via a synced folder (Dropbox, Google Drive, iCloud Drive)? New exports won't overwrite old ones automatically now, so it's worth deleting older copies there yourself so it stays obvious which one is newest.");
+
+  const overlay = el("div",{class:"modal-overlay"});
+  const box = el("div",{class:"modal-box"});
+  box.append(el("div",{class:"box-h"},"Saved as \""+filename+"\""));
+  box.append(el("div",{class:"box-b", style:"margin-bottom:12px;"},
+    "Unless your browser asked you to choose a folder, this went to your device's Downloads folder (on iPhone Chrome specifically, check Chrome's own ⋮ menu → Downloads — it doesn't use the same folder as Safari). Each export is dated, so you'll build a backup history over time."));
+  box.append(el("div",{class:"box-b", style:"margin-bottom:14px;color:var(--ink-soft);font-style:italic;"},
+    "Can't find the file after checking there? The download may not have completed on this browser — tap the button below to open your data directly instead, then use your browser's own Share or Save option to save it yourself."));
+  box.append(el("div",{style:"display:flex;gap:8px;flex-wrap:wrap;"},
+    el("button",{class:"btn primary", onclick:()=>document.body.removeChild(overlay)}, "OK"),
+    el("button",{class:"btn", onclick:()=>{ window.open(url, "_blank"); }}, "Open Data in New Tab Instead")
+  ));
+  overlay.append(box);
+  document.body.appendChild(overlay);
 }
 function doImport(evt){
   const file = evt.target.files[0];
