@@ -150,8 +150,8 @@
   .banner{ font-family:'Segoe UI',system-ui,sans-serif; font-size:12px; background:#fbe9c6; border:1px solid var(--marigold); color:#5c4108; border-radius:8px; padding:10px 16px; margin-bottom:16px; }
 
   @media print{
-    .tabs, .toolbar, .btn, .navbar, .startdate-bar, .petbar{ display:none !important; }
-    .panel{ display:block !important; border:none; page-break-after:always; }
+    body:not(.printing-summary) .tabs, body:not(.printing-summary) .toolbar, body:not(.printing-summary) .btn, body:not(.printing-summary) .navbar, body:not(.printing-summary) .startdate-bar, body:not(.printing-summary) .petbar{ display:none !important; }
+    body:not(.printing-summary) .panel{ display:block !important; border:none; page-break-after:always; }
     body{ background:#fff; }
   }
   #clientSummary{ display:none; }
@@ -892,7 +892,7 @@ function printAdoptionBio(){
   document.body.classList.add('printing-summary');
   const cleanup = ()=> document.body.classList.remove('printing-summary');
   window.addEventListener('afterprint', cleanup, {once:true});
-  window.print();
+  setTimeout(()=>window.print(), 60);
   setTimeout(cleanup, 3000);
 }
 
@@ -945,7 +945,7 @@ function printMedCard(){
   document.body.classList.add('printing-summary');
   const cleanup = ()=> document.body.classList.remove('printing-summary');
   window.addEventListener('afterprint', cleanup, {once:true});
-  window.print();
+  setTimeout(()=>window.print(), 60);
   setTimeout(cleanup, 3000);
 }
 
@@ -1084,18 +1084,22 @@ function renderBackupBanner(){
 
 function generateICS(items){
   const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//HappyMindArts//New Puppy Schedule System//EN'];
+  const today = new Date(); today.setHours(0,0,0,0);
   items.forEach(it=>{
-    const dt = it.date;
+    // Overdue items would otherwise land on a past date with a "1 day before" alarm also in
+    // the past — meaning it would silently sit there and never actually notify anyone.
+    // Reschedule those to today instead, so the alarm can actually fire.
+    const dt = it.overdue ? today : it.date;
     const dtStr = dt.getFullYear()+String(dt.getMonth()+1).padStart(2,'0')+String(dt.getDate()).padStart(2,'0');
     lines.push('BEGIN:VEVENT');
     lines.push('UID:'+encodeURIComponent(it.key)+'@happymindarts.puppyplanner');
     lines.push('DTSTART;VALUE=DATE:'+dtStr);
-    lines.push('SUMMARY:'+(it.petName+': '+it.label));
-    lines.push('DESCRIPTION:Due-date reminder from The New Puppy Schedule System');
+    lines.push('SUMMARY:'+(it.overdue ? 'OVERDUE — ' : '')+it.petName+': '+it.label);
+    lines.push('DESCRIPTION:'+(it.overdue ? 'This was due '+fmtFull(it.date)+' — ' : '')+'Due-date reminder from The New Puppy Schedule System');
     lines.push('BEGIN:VALARM');
     lines.push('ACTION:DISPLAY');
     lines.push('DESCRIPTION:Reminder');
-    lines.push('TRIGGER:-P1D');
+    lines.push('TRIGGER:'+(it.overdue ? '-PT0M' : '-P1D'));
     lines.push('END:VALARM');
     lines.push('END:VEVENT');
   });
@@ -1714,9 +1718,10 @@ function renderVet(){
   p.append(el("div",{class:"stitch"}));
   p.append(el("div",{class:"box-h"},"Emergency contacts"));
   const fields = [["vet","Primary vet"],["phone","Phone"],["emergency","After-hours / emergency clinic"],["poison","Pet poison helpline"],["chip","Microchip number"],["insurance","Pet insurance / policy #"]];
+  const PHONE_FIELD_KEYS = ["phone","poison"];
   const row1 = el("div",{class:"fieldrow"}), row2 = el("div",{class:"fieldrow"});
   fields.forEach(([k,label],i)=>{
-    const f = el("div",{class:"field"}, el("label",{},label), el("input",{type:"text", value:P().emergency[k], oninput:e=>{P().emergency[k]=e.target.value; scheduleAutosave();}}));
+    const f = el("div",{class:"field"}, el("label",{},label), el("input",{type: PHONE_FIELD_KEYS.includes(k) ? "tel" : "text", value:P().emergency[k], oninput:e=>{P().emergency[k]=e.target.value; scheduleAutosave();}}));
     (i<3?row1:row2).appendChild(f);
   });
   p.append(row1,row2);
@@ -1816,7 +1821,7 @@ function printSelectedReceipts(selectedIdx){
   document.body.classList.add('printing-summary');
   const cleanup = ()=> document.body.classList.remove('printing-summary');
   window.addEventListener('afterprint', cleanup, {once:true});
-  window.print();
+  setTimeout(()=>window.print(), 60);
   setTimeout(cleanup, 3000);
 }
 
