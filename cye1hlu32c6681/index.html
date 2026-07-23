@@ -362,6 +362,25 @@ const MAX_PETS = 1;
 const ENABLE_CLIENT_SUMMARY = false;
 
 /* ============================================================ PER-PET DATA ============================================================ */
+const MONTH_NAMES_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function mdyDateField(isoValue, onChange){
+  const parts = isoValue ? isoValue.split("-") : ["","",""];
+  let curY = parts[0]||"", curM = parts[1]?String(parseInt(parts[1],10)):"", curD = parts[2]?String(parseInt(parts[2],10)):"";
+  function sync(){
+    const yNum = curY?parseInt(curY,10):null;
+    const yValid = curY && yNum>=2000 && yNum<=new Date().getFullYear()+1;
+    const iso = (curM && curD && yValid) ? (String(curY).padStart(4,"0")+"-"+String(curM).padStart(2,"0")+"-"+String(curD).padStart(2,"0")) : "";
+    onChange(iso);
+  }
+  return el("div",{style:"display:flex;gap:4px;"},
+    el("select",{class:"select-input", style:"flex:1.3;padding:8px 4px;", onchange:e=>{curM=e.target.value; sync();}},
+      el("option",{value:""}, "Mo"),
+      ...MONTH_NAMES_SHORT.map((mn,i)=>el("option",{value:String(i+1), selected:curM===String(i+1)?"":null}, mn))
+    ),
+    el("input",{type:"number", min:"1", max:"31", placeholder:"Day", value:curD, style:"flex:0 0 52px;", oninput:e=>{curD=e.target.value; sync();}}),
+    el("input",{type:"number", min:"2000", max:String(new Date().getFullYear()+1), placeholder:"Year", value:curY, style:"flex:0 0 62px;", oninput:e=>{curY=e.target.value; sync();}}),
+  );
+}
 function generatePetId(){
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // excludes 0/O and 1/I to avoid mix-ups when handwritten
   let s = '';
@@ -1052,6 +1071,23 @@ function exportRemindersToCalendar(){
   alert('Downloaded puppy-reminders.ics with '+items.length+' due date'+(items.length===1?'':'s')+' — every one currently on file, not just what\'s due soon.\n\nSee "How to Import Your Due Dates into a Calendar App" on this tab for exact steps.\n\nStill re-export whenever you add a NEW due date — this only captures what\'s here right now.');
 }
 
+function renderSettings(){
+  const p = document.getElementById("panel-settings"); p.innerHTML = "";
+  p.append(...header("Preferences","Settings","Controls for how this planner behaves."));
+  p.append(el("div",{class:"box", style: state.autoBackupEnabled ? "border-color:var(--pine);" : "border-color:var(--danger);"},
+    el("div",{class:"box-h"},"Weekly backup reminder"),
+    el("div",{class:"box-b"},
+      el("div",{style:"margin-bottom:8px;"}, "Currently: ", el("b",{style:state.autoBackupEnabled?"":"color:var(--danger);"}, state.autoBackupEnabled ? "ON" : "OFF"),
+        state.autoBackupEnabled
+          ? " — if it's been over a week since your last backup, a reminder will appear at the top with a one-click Back Up Now button. If you already Export yourself, that counts too — the reminder skips that week automatically."
+          : " — you won't be reminded to back up. That's your call, but it means a lost or wiped browser means lost data with no recent backup to fall back on."
+      ),
+      el("button",{class:"addrow", onclick: state.autoBackupEnabled ? turnOffBackupReminder : ()=>{ state.autoBackupEnabled=true; scheduleAutosave(); renderBackupBanner(); renderSettings(); }},
+        state.autoBackupEnabled ? "Turn Off" : "Turn Back On")
+    )
+  ));
+}
+
 function renderReadMeFirst(){
   const p = document.getElementById("panel-readme"); p.innerHTML = "";
   p.append(...header("Start here","Read Me First","A few things worth knowing before you dive in."));
@@ -1061,19 +1097,7 @@ function renderReadMeFirst(){
     el("ul",{class:"tick", style:"margin-top:8px;"},
       el("li",{},el("b",{},"Before clearing your browser's data: "),el("b",{},"Export first"), " since clearing wipes everything in the browser. Use ",el("b",{},"Import")," with that exported file afterward to bring your data back."),
       el("li",{},el("b",{},"More than one person using this? "),"Everyone needs the ",el("b",{},"same browser")," on the ",el("b",{},"same device")," — and on a shared computer, the ",el("b",{},"same login")," too — or you won't see each other's changes. If that's not possible: ",el("b",{},"Export before closing")," (if you made changes), and ",el("b",{},"Import that same file before editing")," — every time."),
-      el("li",{},el("b",{},"Syncing isn't the same as backing up. "),"Putting an exported file in a shared folder (Dropbox, Google Drive, iCloud) only moves it between devices — it doesn't protect it. ",el("b",{},"Export")," is your actual backup — there's a weekly reminder for it below (on by default), but making it your own habit is still the safest bet.")
-    )
-  ));
-  p.append(el("div",{class:"box", style: state.autoBackupEnabled ? "border-color:var(--pine);" : "border-color:var(--danger);"},
-    el("div",{class:"box-h"},"Weekly backup reminder"),
-    el("div",{class:"box-b"},
-      el("div",{style:"margin-bottom:8px;"}, "Currently: ", el("b",{style:state.autoBackupEnabled?"":"color:var(--danger);"}, state.autoBackupEnabled ? "ON" : "OFF"),
-        state.autoBackupEnabled
-          ? " — if it's been over a week since your last backup, a reminder will appear at the top with a one-click Back Up Now button. If you already Export yourself, that counts too — the reminder skips that week automatically."
-          : " — you won't be reminded to back up. That's your call, but it means a lost or wiped browser means lost data with no recent backup to fall back on."
-      ),
-      el("button",{class:"addrow", onclick: state.autoBackupEnabled ? turnOffBackupReminder : ()=>{ state.autoBackupEnabled=true; scheduleAutosave(); renderBackupBanner(); renderReadMeFirst(); }},
-        state.autoBackupEnabled ? "Turn Off" : "Turn Back On")
+      el("li",{},el("b",{},"Syncing isn't the same as backing up. "),"Putting an exported file in a shared folder (Dropbox, Google Drive, iCloud) only moves it between devices — it doesn't protect it. ",el("b",{},"Export")," is your actual backup — there's a weekly reminder for it on the ",el("b",{},"Settings")," tab (on by default), but making it your own habit is still the safest bet.")
     )
   ));
   p.append(el("div",{class:"stitch"}));
@@ -1122,9 +1146,9 @@ function renderPetBar(){
 
 /* ============================================================ TABS ============================================================ */
 const TABS = [
+  {id:"welcome", label:"Welcome"},
   {id:"readme", label:"Read Me First"},
   {id:"profile", label:"Pet Profile"},
-  {id:"welcome", label:"Welcome"},
   ...PHASES.map(p=>({id:p.id, label:p.label})),
   {id:"night", label:"Night & Crate"},
   {id:"potty", label:"Potty Log"},
@@ -1135,6 +1159,7 @@ const TABS = [
   {id:"milestones", label:"Milestones"},
   {id:"reference", label:"Reference & Training"},
   {id:"license", label:"License"},
+  {id:"settings", label:"Settings"},
 ];
 
 /* ============================================================ LICENSE (tier text swapped per build) ============================================================ */
@@ -1304,6 +1329,11 @@ function renderWelcome(){
   );
   p.append(featTable);
   p.append(el("div",{class:"box-b", style:"margin-top:10px;color:var(--ink-soft);font-size:11.5px;"},"Most buttons throughout the planner also show a short explanation if you hover or long-press on them."));
+  p.append(el("div",{class:"stitch"}));
+  p.append(el("div",{style:"text-align:center;padding:8px 0 4px;"},
+    el("div",{style:"font-family:'Segoe UI',system-ui,sans-serif;font-size:11px;color:var(--ink-soft);margin-bottom:10px;"},"Next step — a few important things about how this planner saves your data:"),
+    el("button",{class:"btn primary", onclick:()=>switchTab("readme")}, "Next Step: Go to Read Me First →")
+  ));
 }
 
 /* ============================================================ PHASE PANELS ============================================================ */
@@ -1638,8 +1668,8 @@ function renderVetRows(){
       el("div",{class:"field"}, el("label",{},"Reason for visit"), el("input",{type:"text", value:row.reason, placeholder:"Wellness / Vaccine / Other", oninput:e=>{P().vet[idx].reason=e.target.value; scheduleAutosave();}})),
     ));
     card.append(el("div",{class:"fieldrow"},
-      el("div",{class:"field"}, el("label",{},"Date given"), el("input",{type:"date", value:row.date, oninput:e=>{P().vet[idx].date=e.target.value; scheduleAutosave();}})),
-      el("div",{class:"field"}, el("label",{},"Next due"), el("input",{type:"date", value:row.next, oninput:e=>{P().vet[idx].next=e.target.value; scheduleAutosave(); renderReminderBanner();}})),
+      el("div",{class:"field"}, el("label",{},"Date given"), mdyDateField(row.date, iso=>{P().vet[idx].date=iso; scheduleAutosave();})),
+      el("div",{class:"field"}, el("label",{},"Next due"), mdyDateField(row.next, iso=>{P().vet[idx].next=iso; scheduleAutosave(); renderReminderBanner();})),
       el("div",{class:"field"}, el("label",{},"Weight at visit"), el("input",{type:"text", value:row.weight, placeholder:"lbs", oninput:e=>{P().vet[idx].weight=e.target.value; scheduleAutosave();}})),
     ));
     card.append(el("div",{class:"fieldrow"},
@@ -1729,7 +1759,7 @@ function renderMilestones(){
   P().milestones.forEach((m,idx)=>{
     p.append(el("div",{class:"mrow"}, el("div",{class:"mlabel"}, m.label),
       el("div",{class:"fieldrow"},
-        el("div",{class:"field"}, el("label",{},"Date"), el("input",{type:"date", value:m.date, oninput:e=>{P().milestones[idx].date=e.target.value; scheduleAutosave();}})),
+        el("div",{class:"field"}, el("label",{},"Date"), mdyDateField(m.date, iso=>{P().milestones[idx].date=iso; scheduleAutosave();})),
         el("div",{class:"field", style:"flex:3;"}, el("label",{},"Notes"), el("input",{type:"text", value:m.notes, oninput:e=>{P().milestones[idx].notes=e.target.value; scheduleAutosave();}})),
       )));
   });
@@ -1804,6 +1834,7 @@ function buildAll(){
   safeRender("milestones", renderMilestones);
   safeRender("reference", renderReference);
   safeRender("license", renderLicense);
+  safeRender("settings", renderSettings);
 }
 function rerenderAll(){
   renderPetBar();
