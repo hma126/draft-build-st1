@@ -892,8 +892,9 @@ function printAdoptionBio(){
   document.body.classList.add('printing-summary');
   const cleanup = ()=> document.body.classList.remove('printing-summary');
   window.addEventListener('afterprint', cleanup, {once:true});
+  window.addEventListener('focus', cleanup, {once:true});
   setTimeout(()=>window.print(), 60);
-  setTimeout(cleanup, 3000);
+  setTimeout(cleanup, 120000);
 }
 
 /* ---- Ready-to-Print Med Card (all tiers — vet-visit focused, not adoption marketing) ---- */
@@ -945,8 +946,9 @@ function printMedCard(){
   document.body.classList.add('printing-summary');
   const cleanup = ()=> document.body.classList.remove('printing-summary');
   window.addEventListener('afterprint', cleanup, {once:true});
+  window.addEventListener('focus', cleanup, {once:true});
   setTimeout(()=>window.print(), 60);
-  setTimeout(cleanup, 3000);
+  setTimeout(cleanup, 120000);
 }
 
 /* ============================================================ DUE-DATE REMINDERS ============================================================ */
@@ -1821,8 +1823,9 @@ function printSelectedReceipts(selectedIdx){
   document.body.classList.add('printing-summary');
   const cleanup = ()=> document.body.classList.remove('printing-summary');
   window.addEventListener('afterprint', cleanup, {once:true});
+  window.addEventListener('focus', cleanup, {once:true});
   setTimeout(()=>window.print(), 60);
-  setTimeout(cleanup, 3000);
+  setTimeout(cleanup, 120000);
 }
 
 /* ============================================================ MILESTONES ============================================================ */
