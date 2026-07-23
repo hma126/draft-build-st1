@@ -63,9 +63,9 @@
   th{ font-family:'Segoe UI',system-ui,sans-serif; font-size:10px; letter-spacing:.05em; text-transform:uppercase; background:var(--pine); color:#fff; padding:8px 8px; text-align:left; font-weight:700; }
   td{ border-bottom:1px solid var(--line-soft); padding:6px 8px; font-size:12.8px; vertical-align:middle; }
   tr:nth-child(even) td{ background:rgba(63,93,79,0.035); }
-  td input[type=text], td input[type=time], td input[type=date]{ width:100%; border:none; background:transparent; font-family:inherit; font-size:12.8px; color:var(--ink); padding:4px 2px; }
-  td input[type=text]:focus, td input[type=time]:focus, td input[type=date]:focus{ outline:none; background:#fff6e0; border-radius:3px; }
-  td input.gridcell{ font-size:15px; font-weight:700; text-align:center; padding:8px 2px; color:var(--pine-deep); }
+  td input[type=text], td input[type=time], td input[type=date], td textarea{ width:100%; border:none; background:transparent; font-family:inherit; font-size:12.8px; color:var(--ink); padding:4px 2px; resize:none; box-sizing:border-box; overflow-wrap:break-word; }
+  td input[type=text]:focus, td input[type=time]:focus, td input[type=date]:focus, td textarea:focus{ outline:none; background:#fff6e0; border-radius:3px; }
+  td input.gridcell, td textarea.gridcell{ font-size:15px; font-weight:700; text-align:center; padding:8px 2px; color:var(--pine-deep); }
   .notecell{ color:var(--ink-soft); font-style:italic; font-size:11.8px; }
   .addrow{ font-family:'Segoe UI',system-ui,sans-serif; font-size:11.5px; font-weight:600; color:var(--pine-deep); background:none; border:1.2px dashed var(--pine); border-radius:14px; padding:6px 12px; cursor:pointer; margin-top:8px; }
   .addrow:hover{ background:var(--paper-alt); }
@@ -1507,18 +1507,18 @@ function renderWeeklyLog(tabId, logKey, slots, eyebrow, title, sub, extraFn){
     const tr = el("tr",{}, el("td",{style:"font-weight:700;color:var(--pine-deep);font-family:'Segoe UI',system-ui,sans-serif;font-size:11.5px;"},slot));
     DAYS.forEach((d,i)=>{
       const val = week.data[slot][i] || "";
-      const input = isShortCode
-        ? el("input",{type:"text", class:"gridcell", value:val, oninput:e=>{
+      const cellInput = isShortCode
+        ? el("textarea",{class:"gridcell", rows:"2", oninput:e=>{
             const upper = e.target.value.toUpperCase();
             e.target.value = upper;
             week.data[slot][i]=upper;
             scheduleAutosave();
-          }})
-        : el("input",{type:"text", value:val, oninput:e=>{
+          }}, val)
+        : el("textarea",{rows:"3", oninput:e=>{
             week.data[slot][i]=e.target.value;
             scheduleAutosave();
-          }});
-      tr.appendChild(el("td",{}, input));
+          }}, val);
+      tr.appendChild(el("td",{}, cellInput));
     });
     tbody.appendChild(tr);
   });
