@@ -396,7 +396,7 @@ function freshPet(name){
   return {
     id: 'pet-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),
     petId: generatePetId(),
-    profile: { name: name || "My Puppy", breed: "", birthdate: "", birthMonth: "", birthDay: "", birthYear: "", spayNeuter: "Not Completed",
+    profile: { name: name || "My Puppy", breed: "", sex: "", birthdate: "", birthMonth: "", birthDay: "", birthYear: "", spayNeuter: "Not Completed",
       allergies: "", favoriteToy: "", socializationWins: "", funTraits: "", notes: "", photo: "" },
     adoptionTags: {},
     bioSummary: "",
@@ -849,6 +849,7 @@ function buildAdoptionBioHTML(){
       <div><b>Name</b>${pet.profile.name||"—"}</div>
       <div><b>Age</b>${age}</div>
       <div><b>Breed</b>${pet.profile.breed||"—"}</div>
+      <div><b>Sex</b>${pet.profile.sex||"—"}</div>
       <div><b>Microchip</b>${pet.emergency.chip||"—"}</div>
       <div><b>Spay/Neuter</b>${pet.profile.spayNeuter}</div>
       <div><b>Pet ID</b>${pet.petId}</div>
@@ -904,7 +905,7 @@ function buildMedCardHTML(){
       <div>
         <div class="cs-org">MEDICAL CARD &mdash; BRING TO APPOINTMENT</div>
         <div class="cs-name">${pet.profile.name||"Pet"}</div>
-        <div class="cs-sub">ID ${pet.petId} &middot; ${pet.profile.breed||"Breed unknown"} &middot; Est. DOB ${pet.profile.birthdate?fmtFull(parseDate(pet.profile.birthdate)):"unknown"}</div>
+        <div class="cs-sub">ID ${pet.petId} &middot; ${pet.profile.breed||"Breed unknown"} &middot; ${pet.profile.sex||"Sex unknown"} &middot; Est. DOB ${pet.profile.birthdate?fmtFull(parseDate(pet.profile.birthdate)):"unknown"}</div>
       </div>
       ${pet.profile.photo ? `<img class="cs-photo" src="${pet.profile.photo}">` : ``}
     </div>
@@ -1267,6 +1268,10 @@ function renderProfile(){
   const row1 = el("div",{class:"fieldrow"},
     el("div",{class:"field"}, el("label",{},"Name"), el("input",{type:"text", value:pet.profile.name, oninput:e=>{ pet.profile.name=e.target.value; renderPetBar(); scheduleAutosave(); }})),
     el("div",{class:"field"}, el("label",{},"Breed"), el("input",{type:"text", value:pet.profile.breed, oninput:e=>{ pet.profile.breed=e.target.value; scheduleAutosave(); }})),
+    el("div",{class:"field"}, el("label",{},"Sex"),
+      el("select",{class:"select-input", onchange:e=>{ pet.profile.sex=e.target.value; scheduleAutosave(); }},
+        ...["","Male","Female"].map(opt=>el("option",{value:opt, selected:pet.profile.sex===opt?"":null}, opt||"—"))
+      )),
   );
   const bdYear = pet.profile.birthYear ? parseInt(pet.profile.birthYear,10) : null;
   const bdInvalid = !!(pet.profile.birthYear && (bdYear < 2000 || bdYear > new Date().getFullYear()+1));
