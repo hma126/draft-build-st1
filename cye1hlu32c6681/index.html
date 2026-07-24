@@ -433,7 +433,7 @@ function freshPet(name){
 }
 function freshState(){
   const p = freshPet("My Puppy");
-  return { pets: [p], currentPetId: p.id, orgName: "", mutedReminders: [], autoBackupEnabled: true, lastBackupDate: null };
+  return { pets: [p], currentPetId: p.id, orgName: "", mutedReminders: [], autoBackupEnabled: true, lastBackupDate: null, reminderLeadDays: 2 };
 }
 let state = freshState();
 function P(){ return state.pets.find(p=>p.id===state.currentPetId) || state.pets[0]; }
@@ -514,6 +514,7 @@ function normalizeState(rawData){
   data.mutedReminders = Array.isArray(rawData.mutedReminders) ? rawData.mutedReminders : [];
   data.autoBackupEnabled = rawData.autoBackupEnabled !== undefined ? rawData.autoBackupEnabled : true;
   data.lastBackupDate = rawData.lastBackupDate || null;
+  data.reminderLeadDays = (typeof rawData.reminderLeadDays === 'number' && rawData.reminderLeadDays >= 0) ? rawData.reminderLeadDays : 2;
   return data;
 }
 function loadFromLocal(){
@@ -987,7 +988,7 @@ function reminderKey(petId, label, date){ return petId+"|"+label+"|"+date.getTim
 function computeDueReminders(){
   const items = [];
   const today = new Date(); today.setHours(0,0,0,0);
-  const cutoff = addDays(today, 2);
+  const cutoff = addDays(today, state.reminderLeadDays!=null ? state.reminderLeadDays : 2);
   state.pets.forEach(pet=>{
     (pet.vet||[]).forEach(v=>{
       if(!v.next) return;
@@ -1165,6 +1166,15 @@ function renderSettings(){
       ),
       el("button",{class:"addrow", onclick: state.autoBackupEnabled ? turnOffBackupReminder : ()=>{ state.autoBackupEnabled=true; scheduleAutosave(); renderBackupBanner(); renderSettings(); }},
         state.autoBackupEnabled ? "Turn Off" : "Turn Back On")
+    )
+  ));
+  p.append(el("div",{class:"box"},
+    el("div",{class:"box-h"},"Vet reminder timing"),
+    el("div",{class:"box-b"},
+      el("div",{style:"margin-bottom:8px;"}, "Show a reminder starting ", el("b",{}, String(state.reminderLeadDays!=null?state.reminderLeadDays:2)), " day"+((state.reminderLeadDays!=null?state.reminderLeadDays:2)===1?"":"s")+" before something is due (plus anything already overdue, always shown)."),
+      el("select",{class:"select-input", onchange:e=>{ state.reminderLeadDays = parseInt(e.target.value,10); scheduleAutosave(); renderReminderBanner(); renderSettings(); }},
+        ...[0,1,2,3,5,7,14].map(n=>el("option",{value:String(n), selected:(state.reminderLeadDays!=null?state.reminderLeadDays:2)===n?"":null}, n===0?"Only once overdue":n+" day"+(n===1?"":"s")+" ahead"))
+      )
     )
   ));
   p.append(el("div",{class:"box"},
